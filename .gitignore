@@ -1,0 +1,21 @@
+## General
+__pycache__/
+mseg_semantic.egg-info/*
+temp_files/*
+input_dir/*
+construction_video_tiny2.mp4
+construction_video_trim.mp4
+mseg-3m.pth
+mseg-3m_480p.pth
+
+
+# OSX dir files
+*.DS_Store
+.DS_Store
+
+./mseg-3m_480p.pth
+./.git/objects/pack/pack-10cd5cd82127e17862efaf30000220b5f67a4c7f.pack
+./.git/objects/20/676b7436cc9da218d6f147c7ea66c5918580f2
+./.git/objects/09/7697e90563254d155ba2afade19cea84a1a728
+./construction_video_trim.mp4
+./mseg-3m.pth

@@ -18,8 +18,10 @@ from mseg_semantic.tool.inference_task import InferenceTask
 from mseg_semantic.tool.mseg_dataloaders import create_test_loader
 from mseg_semantic.utils.avg_meter import AverageMeter
 from mseg_semantic.utils.img_path_utils import get_unique_stem_from_last_k_strs
-
-
+import imageio
+from mseg_semantic.utils.cv2_video_utils import VideoWriter,VideoReader
+from mseg.utils.mask_utils_detectron2 import Visualizer
+from mseg.utils.dir_utils import check_mkdir
 _ROOT = Path(__file__).resolve().parent.parent.parent
 
 logger = logger_utils.get_logger()
@@ -66,9 +68,7 @@ class BatchedInferenceTask(InferenceTask):
     """Subclass of InferenceTask that performs inference over batches from a dataset, instead
     of processing each frame one-by-one. Uses Pytorch (not OpenCV) for all interpolation/padding ops.
     """
-
     def execute(self) -> None:
-        """ """
         logger.info(">>>>>>>>>>>>>> Start inference task >>>>>>>>>>>>>")
         self.model.eval()
 
@@ -98,7 +98,7 @@ class BatchedInferenceTask(InferenceTask):
         end = time.time()
 
         dir_utils.check_mkdir(self.gray_folder)
-
+        image_names,gray_paths,image_paths = [], [], []
         for i, (input, _) in enumerate(test_loader):
             logger.info(f"On batch {i}")
             data_time.update(time.time() - end)
@@ -109,11 +109,14 @@ class BatchedInferenceTask(InferenceTask):
             for j in range(batch_sz):
                 # determine path for grayscale label map
                 image_path, _ = self.data_list[i * self.args.batch_size_val + j]
+                image_paths.append(image_path)
                 if self.args.img_name_unique:
                     image_name = Path(image_path).stem
                 else:
                     image_name = get_unique_stem_from_last_k_strs(image_path)
+                image_names.append(image_name)
                 gray_path = os.path.join(self.gray_folder, image_name + ".png")
+                gray_paths.append(gray_path)
                 cv2.imwrite(gray_path, gray_batch[j])
 
             batch_time.update(time.time() - end)
@@ -125,7 +128,17 @@ class BatchedInferenceTask(InferenceTask):
                     f"Data {data_time.val:.3f} (avg={data_time.avg:.3f})"
                     f"Batch {batch_time.val:.3f} (avg={batch_time.avg:.3f})"
                 )
-
+        print("Inference finished, working on visualizing results")
+        for i in range(len(image_names)):
+            image_name,gray_path,image_path = image_names[i],gray_paths[i],image_paths[i]
+            pred = cv2.imread(gray_path)[:,:,0]
+            colored_map_path = os.path.join(self.args.save_folder,"colored",image_name+".jpg")
+            check_mkdir(os.path.join(self.args.save_folder,"colored"))
+            rgb_img = cv2.imread(image_path)
+            frame_visualizer = Visualizer(rgb_img,None)
+            overlaid_img = frame_visualizer.overlay_instances(label_map=pred,id_to_class_name_map=self.id_to_class_name_map)
+#            import pdb;pdb.set_trace()
+            cv2.imwrite(colored_map_path,overlaid_img)
     def execute_on_batch(self, batch: torch.Tensor) -> np.ndarray:
         """Only allows for single-scale inference in batch processing mode for now"""
         start = time.time()
@@ -160,7 +173,7 @@ class BatchedInferenceTask(InferenceTask):
         padded_batch, pad_h_half, pad_w_half = pad_to_crop_sz_batched(
             batch, self.crop_h, self.crop_w, self.mean, self.std
         )
-        prediction_crops = self.net_process_batched(padded_batch)
+        prediction_crops = self.net_process_batched(padded_batch,flip=False)
 
         # disregard predictions from padded portion of image
         prediction_crops = prediction_crops[:, :, pad_h_half : pad_h_half + orig_h, pad_w_half : pad_w_half + orig_w]

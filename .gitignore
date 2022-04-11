@@ -3,6 +3,8 @@ __pycache__/
 mseg_semantic.egg-info/*
 temp_files/*
 input_dir/*
+data_from_airsim/*
+visualizations/*
 construction_video_tiny2.mp4
 construction_video_trim.mp4
 mseg-3m.pth
@@ -19,3 +21,4 @@ mseg-3m_480p.pth
 ./.git/objects/09/7697e90563254d155ba2afade19cea84a1a728
 ./construction_video_trim.mp4
 ./mseg-3m.pth
+

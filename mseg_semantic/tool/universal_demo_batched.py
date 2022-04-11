@@ -86,7 +86,6 @@ def run_universal_demo_batched(args, use_gpu: bool = True) -> None:
 
 
 def get_parser() -> CfgNode:
-    """ """
     parser = argparse.ArgumentParser(description="PyTorch Semantic Segmentation")
     parser.add_argument(
         "--config", type=str, default=f"{_ROOT}/config/test/default_config_360_ss.yaml", help="config file"
@@ -97,6 +96,8 @@ def get_parser() -> CfgNode:
     parser.add_argument(
         "opts", help="see config/ade20k/ade20k_pspnet50.yaml for all options", default=None, nargs=argparse.REMAINDER
     )  # model path is passed in
+    # depth filter
+    parser.add_argument("--depth", type=str, help="dir to depth maps")
     args = parser.parse_args()
     print(args)
     assert args.config is not None
@@ -126,7 +127,8 @@ if __name__ == "__main__":
     assert isinstance(args.input_file, str)
     if not os.path.isdir(args.input_file):
         raise RuntimeError("Please provide a valid image directory using the input_file argument")
-
+#    if not os.path.isdir(args.depth):
+#        raise RuntimeError("Please provide a valid image directory using the depth_file argument")
     if args.dataset == "default":
         args.dataset = Path(args.input_file).stem
 
